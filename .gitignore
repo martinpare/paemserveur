@@ -1,0 +1,21 @@
+# Build results
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (ne jamais commiter)
+appsettings.Production.json
+*.pfx
+*.key
