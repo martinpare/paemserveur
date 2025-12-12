@@ -8,7 +8,11 @@
       "Bash(netstat:*)",
       "Bash(curl:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit - API .NET 5.0 avec SignalR\n\n- API REST pour gestion des permissions, ressources, rôles et utilisateurs\n- Hub SignalR pour notifications temps réel\n- Service de passation\n- Scripts SQL pour les objets de base de données\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
