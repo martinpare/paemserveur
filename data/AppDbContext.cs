@@ -1,104 +1,126 @@
 using Microsoft.EntityFrameworkCore;
-using serveur.Models;
+using serveur.Models.Entities;
 
-public class AppDbContext : DbContext
+namespace serveur.Data
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-    public DbSet<Utilisateur> Utilisateurs { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<Ressource> Ressources { get; set; }
-    public DbSet<Permission> Permissions { get; set; }
-    public DbSet<UtilisateurRole> UtilisateurRoles { get; set; }
-    public DbSet<RolePermission> RolePermissions { get; set; }
-    public DbSet<AttributionRolePortee> AttributionRolePortees { get; set; }
-
-    // Tables de passation d'examen
-    public DbSet<Passation> Passations { get; set; }
-    public DbSet<FileOperationSynchronisation> FileOperationsSynchronisation { get; set; }
-
-    // Vues en lecture seule
-    public DbSet<UtilisateurComplet> UtilisateursComplets { get; set; }
-    public DbSet<RoleComplet> RolesComplets { get; set; }
-    public DbSet<PermissionRessource> PermissionsRessources { get; set; }
-    public DbSet<PermissionUsage> PermissionsUsage { get; set; }
-    public DbSet<PermissionOrpheline> PermissionsOrphelines { get; set; }
-    public DbSet<RessourcePermissions> RessourcesPermissions { get; set; }
-
-    // Vues pour la gestion des ressources
-    public DbSet<RessourceComplete> RessourcesCompletes { get; set; }
-    public DbSet<RessourceParType> RessourcesParType { get; set; }
-    public DbSet<RessourceUtilisateur> RessourcesUtilisateurs { get; set; }
-
-    // Vues pour la gestion avancée des permissions
-    public DbSet<PermissionComplete> PermissionsCompletes { get; set; }
-    public DbSet<PermissionParAction> PermissionsParAction { get; set; }
-    public DbSet<PermissionRoleUtilisateur> PermissionsRoleUtilisateurs { get; set; }
-    public DbSet<PermissionSansRessource> PermissionsSansRessource { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class AppDbContext : DbContext
     {
-        // Clé composite pour UtilisateurRole
-        modelBuilder.Entity<UtilisateurRole>()
-            .HasKey(ur => new { ur.UtilisateurId, ur.RoleId });
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Clé composite pour RolePermission
-        modelBuilder.Entity<RolePermission>()
-            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+        // Core entities
+        public DbSet<Organisation> Organisations { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<Function> Functions { get; set; }
+        public DbSet<RoleFunction> RoleFunctions { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<Title> Titles { get; set; }
 
-        // Configuration des vues (lecture seule, pas de migrations)
-        modelBuilder.Entity<UtilisateurComplet>()
-            .ToView("v_utilisateur_complet")
-            .HasNoKey();
+        // Pedagogical structure
+        public DbSet<PedagogicalElementType> PedagogicalElementTypes { get; set; }
+        public DbSet<PedagogicalStructure> PedagogicalStructures { get; set; }
+        public DbSet<LearningCenter> LearningCenters { get; set; }
+        public DbSet<AdministrationCenter> AdministrationCenters { get; set; }
 
-        modelBuilder.Entity<RoleComplet>()
-            .ToView("v_role_complet")
-            .HasNoKey();
+        // Classifications
+        public DbSet<Classification> Classifications { get; set; }
+        public DbSet<ClassificationNode> ClassificationNodes { get; set; }
+        public DbSet<ClassificationNodeCriteria> ClassificationNodeCriteria { get; set; }
 
-        modelBuilder.Entity<PermissionRessource>()
-            .ToView("v_permission_ressource")
-            .HasNoKey();
+        // Documents
+        public DbSet<DocumentType> DocumentTypes { get; set; }
+        public DbSet<Document> Documents { get; set; }
+        public DbSet<DocumentElement> DocumentElements { get; set; }
+        public DbSet<DocumentMedia> DocumentMedias { get; set; }
+        public DbSet<TemplatePage> TemplatePages { get; set; }
 
-        modelBuilder.Entity<PermissionUsage>()
-            .ToView("v_permission_usage")
-            .HasNoKey();
+        // Items
+        public DbSet<ItemBank> ItemBanks { get; set; }
+        public DbSet<Item> Items { get; set; }
+        public DbSet<ItemBankClassification> ItemBankClassifications { get; set; }
+        public DbSet<ItemVersion> ItemVersions { get; set; }
+        public DbSet<ItemClassificationNode> ItemClassificationNodes { get; set; }
+        public DbSet<Revision> Revisions { get; set; }
+        public DbSet<Modification> Modifications { get; set; }
+        public DbSet<Analysis> Analyses { get; set; }
 
-        modelBuilder.Entity<PermissionOrpheline>()
-            .ToView("v_permission_orpheline")
-            .HasNoKey();
+        // Reports
+        public DbSet<Report> Reports { get; set; }
 
-        modelBuilder.Entity<RessourcePermissions>()
-            .ToView("v_ressource_permissions")
-            .HasNoKey();
+        // Value domains
+        public DbSet<ValueDomain> ValueDomains { get; set; }
+        public DbSet<ValueDomainItem> ValueDomainItems { get; set; }
 
-        // Vues pour la gestion des ressources
-        modelBuilder.Entity<RessourceComplete>()
-            .ToView("v_ressource_complete")
-            .HasNoKey();
+        // Authentication
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
-        modelBuilder.Entity<RessourceParType>()
-            .ToView("v_ressource_par_type")
-            .HasNoKey();
+        // Prompts
+        public DbSet<Prompt> Prompts { get; set; }
+        public DbSet<PromptVersion> PromptVersions { get; set; }
+        public DbSet<PromptVersionComment> PromptVersionComments { get; set; }
 
-        modelBuilder.Entity<RessourceUtilisateur>()
-            .ToView("v_ressource_utilisateur")
-            .HasNoKey();
+        // Sessions
+        public DbSet<Session> Sessions { get; set; }
 
-        // Vues pour la gestion avancée des permissions
-        modelBuilder.Entity<PermissionComplete>()
-            .ToView("v_permission_complete")
-            .HasNoKey();
+        // Page contents
+        public DbSet<PageContent> PageContents { get; set; }
 
-        modelBuilder.Entity<PermissionParAction>()
-            .ToView("v_permission_par_action")
-            .HasNoKey();
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<PermissionRoleUtilisateur>()
-            .ToView("v_permission_role_utilisateur")
-            .HasNoKey();
+            // Configure unique indexes
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
 
-        modelBuilder.Entity<PermissionSansRessource>()
-            .ToView("v_permission_sans_ressource")
-            .HasNoKey();
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Mail)
+                .IsUnique();
+
+            modelBuilder.Entity<Role>()
+                .HasIndex(r => r.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<Function>()
+                .HasIndex(f => f.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<ValueDomain>()
+                .HasIndex(v => v.Tag)
+                .IsUnique();
+
+            // Configure self-referencing relationships
+            modelBuilder.Entity<Role>()
+                .HasOne(r => r.Parent)
+                .WithMany()
+                .HasForeignKey(r => r.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Function>()
+                .HasOne(f => f.Parent)
+                .WithMany()
+                .HasForeignKey(f => f.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Title>()
+                .HasOne(t => t.Parent)
+                .WithMany()
+                .HasForeignKey(t => t.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PedagogicalStructure>()
+                .HasOne(p => p.Parent)
+                .WithMany()
+                .HasForeignKey(p => p.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ClassificationNode>()
+                .HasOne(c => c.Parent)
+                .WithMany()
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 }

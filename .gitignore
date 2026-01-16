@@ -19,3 +19,6 @@ Thumbs.db
 appsettings.Production.json
 *.pfx
 *.key
+
+# MCP Configuration (contient des credentials)
+.mcp.json

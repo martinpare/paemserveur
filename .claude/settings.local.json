@@ -12,7 +12,17 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit - API .NET 5.0 avec SignalR\n\n- API REST pour gestion des permissions, ressources, rôles et utilisateurs\n- Hub SignalR pour notifications temps réel\n- Service de passation\n- Scripts SQL pour les objets de base de données\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__mezur3__execute_sql",
+      "Bash(sqlcmd:*)",
+      "Bash(python -c:*)",
+      "Bash(\"C:\\\\Users\\\\Martin Paré\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -c \"import mssql_mcp_server; help\\(mssql_mcp_server\\)\")",
+      "Bash(\"C:\\\\Users\\\\Martin Paré\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -c:*)",
+      "Bash(\"C:\\\\Users\\\\Martin Paré\\\\AppData\\\\Local\\\\Python\\\\pythoncore-3.14-64\\\\python.exe\" -c \"\nfrom mssql_mcp_server import server\nimport inspect\nprint\\(inspect.getsourcefile\\(server\\)\\)\n\")",
+      "Bash(wc:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(openssl rand:*)",
+      "Bash(powershell -Command \"[Convert]::ToBase64String\\(\\(1..48 | ForEach-Object { Get-Random -Maximum 256 }\\)\\)\")"
     ],
     "deny": [],
     "ask": []

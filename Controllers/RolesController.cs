@@ -1,149 +1,408 @@
+using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Dapper;
-using serveur.Models;
+using Microsoft.Extensions.Logging;
+using serveur.Data;
+using serveur.Models.Entities;
+using serveur.Models.Dtos;
 
 namespace serveur.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class RolesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<RolesController> _logger;
 
-        public RolesController(AppDbContext context)
+        public RolesController(AppDbContext context, ILogger<RolesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>
-        /// Obtient tous les rôles (données de base)
+        /// Obtenir tous les rôles
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
+        public async Task<ActionResult<IEnumerable<Role>>> GetAll()
         {
-            return await _context.Roles.ToListAsync();
+            try
+            {
+                return await _context.Roles
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des rôles");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
 
         /// <summary>
-        /// Obtient tous les rôles avec leurs permissions (via v_role_complet)
-        /// </summary>
-        [HttpGet("complets")]
-        public async Task<ActionResult<IEnumerable<RoleComplet>>> GetRolesComplets()
-        {
-            return await _context.RolesComplets.AsNoTracking().ToListAsync();
-        }
-
-        /// <summary>
-        /// Obtient un rôle par son ID
+        /// Obtenir un rôle par son ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(long id)
+        public async Task<ActionResult<Role>> GetById(int id)
         {
-            var role = await _context.Roles.FindAsync(id);
-            if (role == null)
+            try
             {
-                return NotFound();
+                var role = await _context.Roles.FindAsync(id);
+                if (role == null)
+                {
+                    return NotFound();
+                }
+                return role;
             }
-            return role;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
 
         /// <summary>
-        /// Obtient un rôle complet avec ses permissions (via v_role_complet)
+        /// Obtenir un rôle par son code
         /// </summary>
-        [HttpGet("{id}/complet")]
-        public async Task<ActionResult<IEnumerable<RoleComplet>>> GetRoleComplet(long id)
+        [HttpGet("code/{code}")]
+        public async Task<ActionResult<Role>> GetByCode(string code)
         {
-            var role = await _context.RolesComplets
-                .AsNoTracking()
-                .Where(r => r.RoleId == id)
-                .ToListAsync();
-
-            if (!role.Any())
+            try
             {
-                return NotFound();
+                var role = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.Code == code);
+                if (role == null)
+                {
+                    return NotFound();
+                }
+                return role;
             }
-            return role;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du rôle par code {Code}", code);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
 
         /// <summary>
-        /// Crée un nouveau rôle
+        /// Obtenir les rôles d'une organisation
+        /// </summary>
+        [HttpGet("organisation/{organisationId}")]
+        public async Task<ActionResult<IEnumerable<Role>>> GetByOrganisation(int organisationId)
+        {
+            try
+            {
+                return await _context.Roles
+                    .Where(r => r.OrganisationId == organisationId || r.OrganisationId == null)
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des rôles de l'organisation {OrganisationId}", organisationId);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Obtenir les rôles actifs
+        /// </summary>
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<Role>>> GetActive()
+        {
+            try
+            {
+                return await _context.Roles
+                    .Where(r => r.IsActive)
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des rôles actifs");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Obtenir les fonctions effectives d'un rôle (avec héritage des rôles parents)
+        /// Si le rôle a HasAllPermissions=true, retourne toutes les fonctions actives
+        /// </summary>
+        [HttpGet("{id}/functions")]
+        public async Task<ActionResult<IEnumerable<string>>> GetRoleFunctions(int id)
+        {
+            try
+            {
+                var role = await _context.Roles.FindAsync(id);
+                if (role == null)
+                {
+                    return NotFound("Rôle non trouvé");
+                }
+
+                // Si le rôle a toutes les permissions, retourner toutes les fonctions actives
+                if (role.HasAllPermissions)
+                {
+                    var allFunctionCodes = await _context.Functions
+                        .Where(f => f.IsActive)
+                        .Select(f => f.Code)
+                        .ToListAsync();
+                    return Ok(allFunctionCodes);
+                }
+
+                // Collecter tous les IDs de rôles (incluant les parents)
+                var roleIds = new List<int> { id };
+                var currentRole = role;
+                while (currentRole.ParentId.HasValue)
+                {
+                    roleIds.Add(currentRole.ParentId.Value);
+                    currentRole = await _context.Roles.FindAsync(currentRole.ParentId.Value);
+                    if (currentRole == null) break;
+
+                    // Si un rôle parent a toutes les permissions, retourner toutes les fonctions
+                    if (currentRole.HasAllPermissions)
+                    {
+                        var allFunctionCodes = await _context.Functions
+                            .Where(f => f.IsActive)
+                            .Select(f => f.Code)
+                            .ToListAsync();
+                        return Ok(allFunctionCodes);
+                    }
+                }
+
+                // Récupérer tous les codes de fonctions assignés à ces rôles
+                var functionCodes = await _context.RoleFunctions
+                    .Where(rf => roleIds.Contains(rf.RoleId))
+                    .Select(rf => rf.FunctionCode)
+                    .Distinct()
+                    .ToListAsync();
+
+                return Ok(functionCodes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des fonctions du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Obtenir les enfants d'un rôle
+        /// </summary>
+        [HttpGet("{id}/children")]
+        public async Task<ActionResult<IEnumerable<Role>>> GetChildren(int id)
+        {
+            try
+            {
+                return await _context.Roles
+                    .Where(r => r.ParentId == id)
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des enfants du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Obtenir les rôles en structure arborescente
+        /// </summary>
+        [HttpGet("tree")]
+        public async Task<ActionResult<IEnumerable<RoleTreeDto>>> GetTree()
+        {
+            try
+            {
+                var allRoles = await _context.Roles
+                    .OrderBy(r => r.Level)
+                    .ToListAsync();
+
+                var roots = allRoles.Where(r => r.ParentId == null);
+                return Ok(BuildRoleTree(roots, allRoles));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de l'arbre des rôles");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        private List<RoleTreeDto> BuildRoleTree(IEnumerable<Role> nodes, List<Role> allRoles)
+        {
+            return nodes.Select(r => new RoleTreeDto
+            {
+                Id = r.Id,
+                Code = r.Code,
+                NameFr = r.NameFr,
+                NameEn = r.NameEn,
+                DescriptionFr = r.DescriptionFr,
+                DescriptionEn = r.DescriptionEn,
+                OrganisationId = r.OrganisationId,
+                Level = r.Level,
+                IsSystem = r.IsSystem,
+                IsActive = r.IsActive,
+                HasAllPermissions = r.HasAllPermissions,
+                Children = BuildRoleTree(allRoles.Where(c => c.ParentId == r.Id), allRoles)
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Créer un nouveau rôle
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Role>> PostRole(Role role)
+        public async Task<ActionResult<Role>> Create(Role role)
         {
-            _context.Roles.Add(role);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetRole), new { id = role.Id }, role);
-        }
-
-        /// <summary>
-        /// Copie un rôle existant avec ses permissions (via sp_copier_role)
-        /// </summary>
-        [HttpPost("{id}/copier")]
-        public async Task<ActionResult<object>> CopierRole(long id, [FromBody] CopierRoleDto dto)
-        {
-            var connection = _context.Database.GetDbConnection();
-
-            var result = await connection.QueryFirstOrDefaultAsync<CopierRoleResult>(
-                "sp_copier_role",
-                new { role_source_id = id, nouveau_nom = dto.NouveauNom, nouvelle_description = dto.NouvelleDescription },
-                commandType: CommandType.StoredProcedure);
-
-            if (result != null)
+            try
             {
-                return CreatedAtAction(nameof(GetRole), new { id = result.NouveauRoleId }, result);
+                // Vérifier si le code existe déjà
+                if (await _context.Roles.AnyAsync(r => r.Code == role.Code))
+                {
+                    return BadRequest("Un rôle avec ce code existe déjà");
+                }
+
+                _context.Roles.Add(role);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
             }
-            return BadRequest("Erreur lors de la copie du rôle");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la création du rôle");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
 
         /// <summary>
-        /// Met à jour un rôle
+        /// Mettre à jour un rôle
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(long id, Role role)
+        public async Task<IActionResult> Update(int id, Role role)
         {
             if (id != role.Id)
             {
-                return BadRequest();
+                return BadRequest("L'ID ne correspond pas");
             }
 
-            _context.Entry(role).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            try
+            {
+                // Vérifier si le code existe déjà pour un autre rôle
+                if (await _context.Roles.AnyAsync(r => r.Code == role.Code && r.Id != id))
+                {
+                    return BadRequest("Un autre rôle avec ce code existe déjà");
+                }
+
+                _context.Entry(role).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await RoleExists(id))
+                {
+                    return NotFound();
+                }
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
 
         /// <summary>
-        /// Supprime un rôle
+        /// Supprimer un rôle
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRole(long id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var role = await _context.Roles.FindAsync(id);
-            if (role == null)
+            try
             {
-                return NotFound();
+                // Vérifier si c'est un rôle système
+                var role = await _context.Roles.FindAsync(id);
+                if (role == null)
+                {
+                    return NotFound();
+                }
+
+                if (role.IsSystem)
+                {
+                    return BadRequest("Impossible de supprimer un rôle système");
+                }
+
+                // Vérifier s'il y a des enfants
+                var hasChildren = await _context.Roles.AnyAsync(r => r.ParentId == id);
+                if (hasChildren)
+                {
+                    return BadRequest("Impossible de supprimer un rôle ayant des enfants");
+                }
+
+                // Vérifier s'il y a des utilisateurs avec ce rôle
+                var hasUsers = await _context.UserRoles.AnyAsync(ur => ur.RoleId == id);
+                if (hasUsers)
+                {
+                    return BadRequest("Impossible de supprimer un rôle assigné à des utilisateurs");
+                }
+
+                _context.Roles.Remove(role);
+                await _context.SaveChangesAsync();
+                return NoContent();
             }
-
-            _context.Roles.Remove(role);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
         }
-    }
 
-    public class CopierRoleDto
-    {
-        public string NouveauNom { get; set; }
-        public string NouvelleDescription { get; set; }
-    }
+        /// <summary>
+        /// Initialiser les rôles système par défaut
+        /// </summary>
+        [HttpPost("initialize")]
+        public async Task<ActionResult<IEnumerable<Role>>> Initialize()
+        {
+            try
+            {
+                var createdRoles = new List<Role>();
 
-    public class CopierRoleResult
-    {
-        public long NouveauRoleId { get; set; }
-        public string Nom { get; set; }
+                var defaultRoles = new List<Role>
+                {
+                    new Role { Code = "SUPER_ADMIN", NameFr = "Super Administrateur", NameEn = "Super Administrator", DescriptionFr = "Accès complet au système", DescriptionEn = "Full system access", Level = 0, IsSystem = true, IsActive = true, HasAllPermissions = true },
+                    new Role { Code = "ADMIN", NameFr = "Administrateur", NameEn = "Administrator", DescriptionFr = "Administration du système", DescriptionEn = "System administration", Level = 1, IsSystem = true, IsActive = true, HasAllPermissions = false },
+                    new Role { Code = "MANAGER", NameFr = "Gestionnaire", NameEn = "Manager", DescriptionFr = "Gestion des ressources", DescriptionEn = "Resource management", Level = 2, IsSystem = true, IsActive = true, HasAllPermissions = false },
+                    new Role { Code = "USER", NameFr = "Utilisateur", NameEn = "User", DescriptionFr = "Utilisateur standard", DescriptionEn = "Standard user", Level = 3, IsSystem = true, IsActive = true, HasAllPermissions = false },
+                    new Role { Code = "GUEST", NameFr = "Invité", NameEn = "Guest", DescriptionFr = "Accès limité en lecture", DescriptionEn = "Limited read access", Level = 4, IsSystem = true, IsActive = true, HasAllPermissions = false }
+                };
+
+                foreach (var role in defaultRoles)
+                {
+                    if (!await _context.Roles.AnyAsync(r => r.Code == role.Code))
+                    {
+                        _context.Roles.Add(role);
+                        createdRoles.Add(role);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("{Count} rôles initialisés", createdRoles.Count);
+                return Ok(new { message = $"{createdRoles.Count} rôle(s) créé(s)", roles = createdRoles });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'initialisation des rôles");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        private async Task<bool> RoleExists(int id)
+        {
+            return await _context.Roles.AnyAsync(e => e.Id == id);
+        }
     }
 }
