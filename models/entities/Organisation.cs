@@ -25,5 +25,17 @@ namespace serveur.Models.Entities
         [Required]
         [Column("isActive")]
         public bool IsActive { get; set; }
+
+        [Column("acronym")]
+        [StringLength(50)]
+        public string Acronym { get; set; }
+
+        [Column("address")]
+        [StringLength(255)]
+        public string Address { get; set; }
+
+        [Column("city")]
+        [StringLength(100)]
+        public string City { get; set; }
     }
 }

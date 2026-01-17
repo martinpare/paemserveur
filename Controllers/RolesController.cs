@@ -192,6 +192,47 @@ namespace serveur.Controllers
         }
 
         /// <summary>
+        /// Mettre à jour les fonctions d'un rôle (sync)
+        /// </summary>
+        [HttpPut("{id}/functions")]
+        public async Task<IActionResult> UpdateRoleFunctions(int id, [FromBody] UpdateRoleFunctionsDto dto)
+        {
+            try
+            {
+                var role = await _context.Roles.FindAsync(id);
+                if (role == null)
+                {
+                    return NotFound("Rôle non trouvé");
+                }
+
+                // Supprimer les anciennes assignations
+                var existingAssignments = await _context.RoleFunctions
+                    .Where(rf => rf.RoleId == id)
+                    .ToListAsync();
+                _context.RoleFunctions.RemoveRange(existingAssignments);
+
+                // Créer les nouvelles assignations
+                if (dto.FunctionIds != null && dto.FunctionIds.Any())
+                {
+                    var newAssignments = dto.FunctionIds.Select(code => new RoleFunction
+                    {
+                        RoleId = id,
+                        FunctionCode = code
+                    });
+                    _context.RoleFunctions.AddRange(newAssignments);
+                }
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour des fonctions du rôle {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
         /// Obtenir les enfants d'un rôle
         /// </summary>
         [HttpGet("{id}/children")]
@@ -256,14 +297,15 @@ namespace serveur.Controllers
         /// Créer un nouveau rôle
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Role>> Create(Role role)
+        public async Task<ActionResult<Role>> Create([FromBody] Role role)
         {
             try
             {
-                // Vérifier si le code existe déjà
-                if (await _context.Roles.AnyAsync(r => r.Code == role.Code))
+                // Vérifier si le code existe déjà dans la même organisation
+                if (await _context.Roles.AnyAsync(r => r.Code.ToLower() == role.Code.ToLower()
+                    && r.OrganisationId == role.OrganisationId))
                 {
-                    return BadRequest("Un rôle avec ce code existe déjà");
+                    return BadRequest("Un rôle avec ce code existe déjà dans cette organisation");
                 }
 
                 _context.Roles.Add(role);
@@ -281,19 +323,38 @@ namespace serveur.Controllers
         /// Mettre à jour un rôle
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Role role)
+        public async Task<IActionResult> Update(int id, [FromBody] Role role)
         {
-            if (id != role.Id)
+            _logger.LogInformation("Update role: id={Id}, role.Id={RoleId}, role.Code={Code}", id, role?.Id, role?.Code);
+
+            // Vérifier si le modèle est valide
+            if (!ModelState.IsValid)
             {
-                return BadRequest("L'ID ne correspond pas");
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                _logger.LogWarning("ModelState invalid: {Errors}", string.Join(", ", errors));
+                return BadRequest(ModelState);
             }
+
+            if (role == null)
+            {
+                return BadRequest("Le corps de la requête est vide");
+            }
+
+            // Assigner l'ID depuis l'URL pour éviter les problèmes de binding
+            role.Id = id;
 
             try
             {
-                // Vérifier si le code existe déjà pour un autre rôle
-                if (await _context.Roles.AnyAsync(r => r.Code == role.Code && r.Id != id))
+                // Vérifier si le code existe déjà pour un autre rôle dans la même organisation
+                var duplicateRole = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.Code.ToLower() == role.Code.ToLower()
+                        && r.Id != id
+                        && r.OrganisationId == role.OrganisationId);
+                if (duplicateRole != null)
                 {
-                    return BadRequest("Un autre rôle avec ce code existe déjà");
+                    _logger.LogWarning("Duplicate code found: role.Id={RoleId}, duplicateRole.Id={DuplicateId}, code={Code}",
+                        id, duplicateRole.Id, role.Code);
+                    return BadRequest($"Un autre rôle (ID: {duplicateRole.Id}) avec ce code existe déjà dans cette organisation");
                 }
 
                 _context.Entry(role).State = EntityState.Modified;
@@ -348,6 +409,10 @@ namespace serveur.Controllers
                 {
                     return BadRequest("Impossible de supprimer un rôle assigné à des utilisateurs");
                 }
+
+                // Supprimer les fonctions associées au rôle
+                var roleFunctions = await _context.RoleFunctions.Where(rf => rf.RoleId == id).ToListAsync();
+                _context.RoleFunctions.RemoveRange(roleFunctions);
 
                 _context.Roles.Remove(role);
                 await _context.SaveChangesAsync();

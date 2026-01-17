@@ -77,6 +77,10 @@ namespace serveur.Models.Entities
         [Column("resetTokenExpiry")]
         public DateTime? ResetTokenExpiry { get; set; }
 
+        [Required]
+        [Column("active")]
+        public bool Active { get; set; } = true;
+
         // Navigation properties
         [ForeignKey("OrganisationId")]
         public virtual Organisation Organisation { get; set; }

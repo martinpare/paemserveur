@@ -207,6 +207,27 @@ namespace serveur.Controllers
         }
 
         /// <summary>
+        /// Supprimer tous les centres d'apprentissage
+        /// </summary>
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAll()
+        {
+            try
+            {
+                var count = await _context.LearningCenters.CountAsync();
+                _context.LearningCenters.RemoveRange(_context.LearningCenters);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Suppression de {Count} centres d'apprentissage", count);
+                return Ok(new { deleted = count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la suppression de tous les centres d'apprentissage");
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
         /// Supprimer un centre d'apprentissage
         /// </summary>
         [HttpDelete("{id}")]

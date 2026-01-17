@@ -84,4 +84,12 @@ namespace serveur.Models.Dtos
         public string ReferencesJuridiques { get; set; }
         public List<ClassificationNodeTreeDto> Children { get; set; } = new List<ClassificationNodeTreeDto>();
     }
+
+    /// <summary>
+    /// DTO pour mettre à jour les fonctions d'un rôle
+    /// </summary>
+    public class UpdateRoleFunctionsDto
+    {
+        public List<string> FunctionIds { get; set; } = new List<string>();
+    }
 }
