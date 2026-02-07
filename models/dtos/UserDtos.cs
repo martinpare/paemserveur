@@ -11,7 +11,7 @@ namespace serveur.Models.Dtos
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public string Sexe { get; set; }
+        public int? GenderId { get; set; }
         public string Username { get; set; }
         public string Mail { get; set; }
         public bool DarkMode { get; set; }
@@ -23,6 +23,7 @@ namespace serveur.Models.Dtos
         public int? LearningCenterId { get; set; }
         public int? TitleId { get; set; }
         public int? ActiveRoleId { get; set; }
+        public bool Active { get; set; }
     }
 
     /// <summary>
@@ -38,8 +39,7 @@ namespace serveur.Models.Dtos
         [StringLength(100)]
         public string LastName { get; set; }
 
-        [StringLength(1)]
-        public string Sexe { get; set; }
+        public int? GenderId { get; set; }
 
         [Required]
         [StringLength(50)]
@@ -58,6 +58,7 @@ namespace serveur.Models.Dtos
         public int? PedagogicalStructureId { get; set; }
         public int? LearningCenterId { get; set; }
         public int? TitleId { get; set; }
+        public bool Active { get; set; } = true;
     }
 
     /// <summary>
@@ -73,8 +74,7 @@ namespace serveur.Models.Dtos
         [StringLength(100)]
         public string LastName { get; set; }
 
-        [StringLength(1)]
-        public string Sexe { get; set; }
+        public int? GenderId { get; set; }
 
         [Required]
         [StringLength(255)]
@@ -85,6 +85,7 @@ namespace serveur.Models.Dtos
         public int? PedagogicalStructureId { get; set; }
         public int? LearningCenterId { get; set; }
         public int? TitleId { get; set; }
+        public bool Active { get; set; }
     }
 
     /// <summary>
@@ -129,8 +130,7 @@ namespace serveur.Models.Dtos
         [StringLength(100)]
         public string LastName { get; set; }
 
-        [StringLength(1)]
-        public string Sexe { get; set; }
+        public int? GenderId { get; set; }
 
         [StringLength(255)]
         [EmailAddress]
@@ -151,6 +151,7 @@ namespace serveur.Models.Dtos
         public int? LearningCenterId { get; set; }
         public int? TitleId { get; set; }
         public int? ActiveRoleId { get; set; }
+        public bool? Active { get; set; }
     }
 
     /// <summary>

@@ -62,7 +62,7 @@ namespace serveur.Models.Dtos
         public string Mail { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public string Sexe { get; set; }
+        public int? GenderId { get; set; }
         public bool DarkMode { get; set; }
         public string Avatar { get; set; }
         public string AccentColor { get; set; }
@@ -71,6 +71,7 @@ namespace serveur.Models.Dtos
         public int? PedagogicalStructureId { get; set; }
         public int? LearningCenterId { get; set; }
         public int? TitleId { get; set; }
+        public int? ActiveRoleId { get; set; }
         public string[] Roles { get; set; }
     }
 
@@ -106,6 +107,21 @@ namespace serveur.Models.Dtos
     }
 
     /// <summary>
+    /// DTO pour la connexion avec tenant (organisation)
+    /// </summary>
+    public class TenantLoginDto
+    {
+        [Required(ErrorMessage = "Le nom d'utilisateur est requis")]
+        public string Username { get; set; }
+
+        [Required(ErrorMessage = "Le mot de passe est requis")]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "L'organisation est requise")]
+        public int OrganisationId { get; set; }
+    }
+
+    /// <summary>
     /// DTO pour la liste des utilisateurs disponibles au login (endpoint public)
     /// Contient uniquement les informations non sensibles nécessaires à l'affichage
     /// </summary>
@@ -116,5 +132,120 @@ namespace serveur.Models.Dtos
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Avatar { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la connexion d'un apprenant
+    /// </summary>
+    public class LearnerLoginDto
+    {
+        [Required(ErrorMessage = "Le code permanent est requis")]
+        public string PermanentCode { get; set; }
+
+        [Required(ErrorMessage = "Le mot de passe est requis")]
+        public string Password { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la connexion d'un apprenant en mode développement (sans mot de passe)
+    /// </summary>
+    public class DevLearnerLoginDto
+    {
+        [Required(ErrorMessage = "Le code permanent est requis")]
+        public string PermanentCode { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour les informations d'un apprenant authentifié
+    /// </summary>
+    public class LearnerInfoDto
+    {
+        public int Id { get; set; }
+        public string PermanentCode { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public string Email { get; set; }
+        public int LearningCenterId { get; set; }
+        public int? GroupId { get; set; }
+        public int LanguageId { get; set; }
+        public bool HasAccommodations { get; set; }
+        public string Avatar { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la réponse de token d'un apprenant
+    /// </summary>
+    public class LearnerTokenResponseDto
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public string TokenType { get; set; } = "Bearer";
+        public LearnerInfoDto Learner { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la demande de réinitialisation de mot de passe
+    /// </summary>
+    public class ForgotPasswordDto
+    {
+        [Required(ErrorMessage = "L'email est requis")]
+        [EmailAddress(ErrorMessage = "Format d'email invalide")]
+        public string Email { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la réponse de demande de réinitialisation de mot de passe
+    /// </summary>
+    public class ForgotPasswordResponseDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public bool UserExists { get; set; }
+        public int? UserId { get; set; }
+        public string ResetToken { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la validation d'un token de réinitialisation
+    /// </summary>
+    public class ValidateResetTokenDto
+    {
+        [Required(ErrorMessage = "Le token est requis")]
+        public string Token { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la réponse de validation d'un token de réinitialisation
+    /// </summary>
+    public class ValidateResetTokenResponseDto
+    {
+        public bool Valid { get; set; }
+        public string Message { get; set; }
+        public string FirstName { get; set; }
+        public string Email { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la réinitialisation du mot de passe
+    /// </summary>
+    public class ResetPasswordDto
+    {
+        [Required(ErrorMessage = "Le token est requis")]
+        public string Token { get; set; }
+
+        [Required(ErrorMessage = "Le nouveau mot de passe est requis")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Le mot de passe doit contenir au moins 6 caractères")]
+        public string NewPassword { get; set; }
+    }
+
+    /// <summary>
+    /// DTO pour la réponse de réinitialisation du mot de passe
+    /// </summary>
+    public class ResetPasswordResponseDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
     }
 }

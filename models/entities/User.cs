@@ -21,9 +21,8 @@ namespace serveur.Models.Entities
         [StringLength(100)]
         public string LastName { get; set; }
 
-        [Column("sexe")]
-        [StringLength(1)]
-        public string Sexe { get; set; }
+        [Column("genderId")]
+        public int? GenderId { get; set; }
 
         [Required]
         [Column("username")]
@@ -96,5 +95,8 @@ namespace serveur.Models.Entities
 
         [ForeignKey("ActiveRoleId")]
         public virtual Role ActiveRole { get; set; }
+
+        [ForeignKey("GenderId")]
+        public virtual ValueDomainItem Gender { get; set; }
     }
 }

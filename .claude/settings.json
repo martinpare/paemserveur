@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "mssql": {
+      "command": "C:\\Users\\Martin Paré\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+      "args": ["-m", "mssql_mcp_server"],
+      "env": {
+        "MSSQL_HOST": "localhost\\sqlexpress",
+        "MSSQL_DATABASE": "mz3",
+        "MSSQL_USER": "claude_user",
+        "MSSQL_PASSWORD": "VotreMotDePasse123!",
+        "MSSQL_DRIVER": "ODBC Driver 17 for SQL Server"
+      }
+    }
+  }
+}

@@ -22,9 +22,31 @@ Lorsque l'utilisateur demande de modifier une table (ajouter une colonne, modifi
 
 ### Conventions de nommage
 
-- Tables : snake_case pluriel (ex: `organisations`, `learning_centers`)
-- Colonnes : camelCase (ex: `nameFr`, `isActive`)
-- Schéma : `dbo`
+**IMPORTANT : Toujours respecter ces conventions pour toute nouvelle table ou colonne.**
+
+- **Tables** : camelCase pluriel (ex: `organisations`, `learningCenters`, `discussionThreads`)
+  - Utiliser le pluriel pour les tables
+  - Première lettre en minuscule, puis camelCase
+- **Colonnes** : camelCase (ex: `nameFr`, `isActive`, `createdAt`)
+  - Première lettre en minuscule, puis camelCase
+- **Schéma** : `dbo`
+
+**Exemples :**
+```sql
+-- ✅ Correct
+CREATE TABLE dbo.discussionThreads (
+    id INT,
+    entityType NVARCHAR(100),
+    createdAt DATETIME2
+);
+
+-- ❌ Incorrect (snake_case)
+CREATE TABLE dbo.discussion_threads (
+    id INT,
+    entity_type NVARCHAR(100),
+    created_at DATETIME2
+);
+```
 
 ### Utilisateur SQL
 

@@ -143,6 +143,26 @@ namespace serveur.Hubs
         }
 
         /// <summary>
+        /// Rejoindre le groupe des apprenants pour recevoir les notifications de mise à jour du dictionnaire
+        /// </summary>
+        public async Task JoinLearnerGroup()
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "learners");
+            _logger.LogInformation("Apprenant {ConnectionId} a rejoint le groupe learners pour la synchronisation du dictionnaire",
+                Context.ConnectionId);
+        }
+
+        /// <summary>
+        /// Quitter le groupe des apprenants
+        /// </summary>
+        public async Task LeaveLearnerGroup()
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "learners");
+            _logger.LogInformation("Apprenant {ConnectionId} a quitté le groupe learners",
+                Context.ConnectionId);
+        }
+
+        /// <summary>
         /// Quitter un groupe
         /// </summary>
         public async Task LeaveGroup(string groupName)

@@ -10,6 +10,10 @@ namespace serveur.Models.Entities
         [Column("id")]
         public int Id { get; set; }
 
+        [Column("code")]
+        [StringLength(50)]
+        public string Code { get; set; }
+
         [Column("pedagogicalStrudtureId")]
         public int? PedagogicalStructureId { get; set; }
 

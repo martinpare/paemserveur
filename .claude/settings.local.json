@@ -22,9 +22,16 @@
       "Bash(wc:*)",
       "Bash(dotnet restore:*)",
       "Bash(openssl rand:*)",
-      "Bash(powershell -Command \"[Convert]::ToBase64String\\(\\(1..48 | ForEach-Object { Get-Random -Maximum 256 }\\)\\)\")"
+      "Bash(powershell -Command \"[Convert]::ToBase64String\\(\\(1..48 | ForEach-Object { Get-Random -Maximum 256 }\\)\\)\")",
+      "Bash(dotnet run:*)",
+      "Bash(ls:*)",
+      "Bash(iconv:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "mezur3"
+  ],
+  "enableAllProjectMcpServers": true
 }

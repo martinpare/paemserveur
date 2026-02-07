@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -49,5 +50,7 @@ namespace serveur.Models.Entities
         // Navigation properties
         [ForeignKey("PedagogicalStructureId")]
         public virtual PedagogicalStructure PedagogicalStructure { get; set; }
+
+        public virtual ICollection<DocumentItemBank> DocumentItemBanks { get; set; }
     }
 }

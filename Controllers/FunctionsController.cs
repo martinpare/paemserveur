@@ -230,39 +230,139 @@ namespace serveur.Controllers
         }
 
         /// <summary>
-        /// Mettre à jour une fonction
+        /// Mettre à jour une fonction (mise à jour partielle supportée)
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Function function)
+        public async Task<IActionResult> Update(int id, [FromBody] Dictionary<string, object> updates)
         {
-            if (id != function.Id)
-            {
-                return BadRequest("L'ID ne correspond pas");
-            }
-
             try
             {
-                // Vérifier si le code existe déjà pour une autre fonction
-                if (await _context.Functions.AnyAsync(f => f.Code == function.Code && f.Id != id))
+                var function = await _context.Functions.FindAsync(id);
+                if (function == null)
                 {
-                    return BadRequest("Une autre fonction avec ce code existe déjà");
+                    return NotFound($"Fonction avec l'ID {id} non trouvée");
                 }
 
-                _context.Entry(function).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await FunctionExists(id))
+                // Appliquer les mises à jour
+                if (updates.ContainsKey("sortOrder"))
                 {
-                    return NotFound();
+                    function.SortOrder = Convert.ToInt32(updates["sortOrder"]);
                 }
-                throw;
+                if (updates.ContainsKey("parentId"))
+                {
+                    var parentIdValue = updates["parentId"];
+                    function.ParentId = parentIdValue == null ? null : Convert.ToInt32(parentIdValue);
+                }
+                if (updates.ContainsKey("isActive"))
+                {
+                    function.IsActive = Convert.ToBoolean(updates["isActive"]);
+                }
+                if (updates.ContainsKey("code"))
+                {
+                    var newCode = updates["code"]?.ToString();
+                    // Vérifier uniquement si le code change
+                    if (newCode != function.Code && await _context.Functions.AnyAsync(f => f.Code == newCode && f.Id != id))
+                    {
+                        return BadRequest("Une autre fonction avec ce code existe déjà");
+                    }
+                    function.Code = newCode;
+                }
+                if (updates.ContainsKey("labelFr"))
+                {
+                    function.LabelFr = updates["labelFr"]?.ToString();
+                }
+                if (updates.ContainsKey("labelEn"))
+                {
+                    function.LabelEn = updates["labelEn"]?.ToString();
+                }
+                if (updates.ContainsKey("descriptionFr"))
+                {
+                    function.DescriptionFr = updates["descriptionFr"]?.ToString();
+                }
+                if (updates.ContainsKey("descriptionEn"))
+                {
+                    function.DescriptionEn = updates["descriptionEn"]?.ToString();
+                }
+                if (updates.ContainsKey("icon"))
+                {
+                    function.Icon = updates["icon"]?.ToString();
+                }
+                if (updates.ContainsKey("route"))
+                {
+                    function.Route = updates["route"]?.ToString();
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(function);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour de la fonction {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Mettre à jour l'ordre d'une fonction (PATCH partiel)
+        /// </summary>
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> Patch(int id, [FromBody] Dictionary<string, object> updates)
+        {
+            try
+            {
+                var function = await _context.Functions.FindAsync(id);
+                if (function == null)
+                {
+                    return NotFound($"Fonction avec l'ID {id} non trouvée");
+                }
+
+                // Appliquer les mises à jour partielles
+                if (updates.ContainsKey("sortOrder"))
+                {
+                    function.SortOrder = Convert.ToInt32(updates["sortOrder"]);
+                }
+                if (updates.ContainsKey("parentId"))
+                {
+                    var parentIdValue = updates["parentId"];
+                    function.ParentId = parentIdValue == null ? null : Convert.ToInt32(parentIdValue);
+                }
+                if (updates.ContainsKey("isActive"))
+                {
+                    function.IsActive = Convert.ToBoolean(updates["isActive"]);
+                }
+                if (updates.ContainsKey("code"))
+                {
+                    var newCode = updates["code"]?.ToString();
+                    // Vérifier uniquement si le code change
+                    if (newCode != function.Code && await _context.Functions.AnyAsync(f => f.Code == newCode && f.Id != id))
+                    {
+                        return BadRequest("Une autre fonction avec ce code existe déjà");
+                    }
+                    function.Code = newCode;
+                }
+                if (updates.ContainsKey("labelFr"))
+                {
+                    function.LabelFr = updates["labelFr"]?.ToString();
+                }
+                if (updates.ContainsKey("labelEn"))
+                {
+                    function.LabelEn = updates["labelEn"]?.ToString();
+                }
+                if (updates.ContainsKey("icon"))
+                {
+                    function.Icon = updates["icon"]?.ToString();
+                }
+                if (updates.ContainsKey("route"))
+                {
+                    function.Route = updates["route"]?.ToString();
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(function);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mise à jour partielle de la fonction {Id}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }

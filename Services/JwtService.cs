@@ -59,6 +59,35 @@ namespace serveur.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public string GenerateLearnerAccessToken(Learner learner)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, learner.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, learner.Id.ToString()),
+                new Claim(ClaimTypes.Name, learner.PermanentCode),
+                new Claim(ClaimTypes.Email, learner.Email ?? string.Empty),
+                new Claim("firstName", learner.FirstName ?? string.Empty),
+                new Claim("lastName", learner.LastName ?? string.Empty),
+                new Claim("userType", "learner"),
+                new Claim(ClaimTypes.Role, "learner")
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _issuer,
+                audience: _audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(_accessTokenExpirationMinutes),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
         public string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];

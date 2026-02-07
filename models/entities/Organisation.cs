@@ -37,5 +37,19 @@ namespace serveur.Models.Entities
         [Column("city")]
         [StringLength(100)]
         public string City { get; set; }
+
+        [Column("webSite")]
+        [StringLength(255)]
+        public string WebSite { get; set; }
+
+        [Column("showMezurLogo")]
+        public bool ShowMezurLogo { get; set; } = true;
+
+        [Column("showPedagogicalStructureInHeader")]
+        public bool ShowPedagogicalStructureInHeader { get; set; } = false;
+
+        [Column("headerColor")]
+        [StringLength(50)]
+        public string HeaderColor { get; set; }
     }
 }

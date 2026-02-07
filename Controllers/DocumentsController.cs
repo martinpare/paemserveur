@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using serveur.Data;
+using serveur.Models.Dtos;
 using serveur.Models.Entities;
 
 namespace serveur.Controllers
@@ -45,19 +46,24 @@ namespace serveur.Controllers
         }
 
         /// <summary>
-        /// Obtenir un document par son ID
+        /// Obtenir un document par son ID avec ses banques d'items
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Document>> GetById(int id)
+        public async Task<ActionResult<DocumentResponseDto>> GetById(int id)
         {
             try
             {
-                var document = await _context.Documents.FindAsync(id);
+                var document = await _context.Documents
+                    .Include(d => d.DocumentItemBanks)
+                    .ThenInclude(dib => dib.ItemBank)
+                    .FirstOrDefaultAsync(d => d.Id == id);
+
                 if (document == null)
                 {
                     return NotFound();
                 }
-                return document;
+
+                return MapToResponseDto(document);
             }
             catch (Exception ex)
             {
@@ -187,19 +193,66 @@ namespace serveur.Controllers
         }
 
         /// <summary>
-        /// Créer un nouveau document
+        /// Créer un nouveau document avec ses banques d'items
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Document>> Create(Document document)
+        public async Task<ActionResult<DocumentResponseDto>> Create(CreateDocumentDto dto)
         {
             try
             {
-                document.CreatedAt = DateTime.UtcNow;
-                document.UpdatedAt = DateTime.UtcNow;
+                var document = new Document
+                {
+                    PedagogicalStructureId = dto.PedagogicalStructureId,
+                    DocumentTypeId = dto.DocumentTypeId,
+                    ExternalReferenceCode = dto.ExternalReferenceCode,
+                    Version = dto.Version,
+                    IsActive = dto.IsActive,
+                    Status = dto.Status,
+                    TitleFr = dto.TitleFr,
+                    TitleEn = dto.TitleEn,
+                    DescriptionFr = dto.DescriptionFr,
+                    DescriptionEn = dto.DescriptionEn,
+                    WelcomeMessageFr = dto.WelcomeMessageFr,
+                    WelcomeMessageEn = dto.WelcomeMessageEn,
+                    CopyrightFr = dto.CopyrightFr,
+                    CopyrightEn = dto.CopyrightEn,
+                    UrlFr = dto.UrlFr,
+                    UrlEn = dto.UrlEn,
+                    IsDownloadable = dto.IsDownloadable,
+                    IsPublic = dto.IsPublic,
+                    IsEditable = dto.IsEditable,
+                    EditorSettings = dto.EditorSettings,
+                    AuthorId = dto.AuthorId,
+                    IsTemplate = dto.IsTemplate,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
 
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
-                return CreatedAtAction(nameof(GetById), new { id = document.Id }, document);
+
+                // Ajouter les associations avec les banques d'items
+                if (dto.ItemBankIds != null && dto.ItemBankIds.Any())
+                {
+                    foreach (var itemBankId in dto.ItemBankIds)
+                    {
+                        _context.DocumentItemBanks.Add(new DocumentItemBank
+                        {
+                            DocumentId = document.Id,
+                            ItemBankId = itemBankId,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Recharger le document avec ses banques d'items
+                var createdDocument = await _context.Documents
+                    .Include(d => d.DocumentItemBanks)
+                    .ThenInclude(dib => dib.ItemBank)
+                    .FirstOrDefaultAsync(d => d.Id == document.Id);
+
+                return CreatedAtAction(nameof(GetById), new { id = document.Id }, MapToResponseDto(createdDocument));
             }
             catch (Exception ex)
             {
@@ -209,30 +262,74 @@ namespace serveur.Controllers
         }
 
         /// <summary>
-        /// Mettre à jour un document
+        /// Mettre à jour un document avec ses banques d'items
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Document document)
+        public async Task<ActionResult<DocumentResponseDto>> Update(int id, UpdateDocumentDto dto)
         {
-            if (id != document.Id)
-            {
-                return BadRequest("L'ID ne correspond pas");
-            }
-
             try
             {
-                document.UpdatedAt = DateTime.UtcNow;
-                _context.Entry(document).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await DocumentExists(id))
+                var document = await _context.Documents
+                    .Include(d => d.DocumentItemBanks)
+                    .FirstOrDefaultAsync(d => d.Id == id);
+
+                if (document == null)
                 {
                     return NotFound();
                 }
-                throw;
+
+                // Mettre à jour les propriétés du document
+                document.PedagogicalStructureId = dto.PedagogicalStructureId;
+                document.DocumentTypeId = dto.DocumentTypeId;
+                document.ExternalReferenceCode = dto.ExternalReferenceCode;
+                document.Version = dto.Version;
+                document.IsActive = dto.IsActive;
+                document.Status = dto.Status;
+                document.TitleFr = dto.TitleFr;
+                document.TitleEn = dto.TitleEn;
+                document.DescriptionFr = dto.DescriptionFr;
+                document.DescriptionEn = dto.DescriptionEn;
+                document.WelcomeMessageFr = dto.WelcomeMessageFr;
+                document.WelcomeMessageEn = dto.WelcomeMessageEn;
+                document.CopyrightFr = dto.CopyrightFr;
+                document.CopyrightEn = dto.CopyrightEn;
+                document.UrlFr = dto.UrlFr;
+                document.UrlEn = dto.UrlEn;
+                document.IsDownloadable = dto.IsDownloadable;
+                document.IsPublic = dto.IsPublic;
+                document.IsEditable = dto.IsEditable;
+                document.EditorSettings = dto.EditorSettings;
+                document.AuthorId = dto.AuthorId;
+                document.IsTemplate = dto.IsTemplate;
+                document.UpdatedAt = DateTime.UtcNow;
+
+                // Mettre à jour les associations avec les banques d'items
+                if (dto.ItemBankIds != null)
+                {
+                    // Supprimer les anciennes associations
+                    _context.DocumentItemBanks.RemoveRange(document.DocumentItemBanks);
+
+                    // Ajouter les nouvelles associations
+                    foreach (var itemBankId in dto.ItemBankIds)
+                    {
+                        _context.DocumentItemBanks.Add(new DocumentItemBank
+                        {
+                            DocumentId = document.Id,
+                            ItemBankId = itemBankId,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Recharger le document avec ses banques d'items
+                var updatedDocument = await _context.Documents
+                    .Include(d => d.DocumentItemBanks)
+                    .ThenInclude(dib => dib.ItemBank)
+                    .FirstOrDefaultAsync(d => d.Id == id);
+
+                return Ok(MapToResponseDto(updatedDocument));
             }
             catch (Exception ex)
             {
@@ -269,6 +366,44 @@ namespace serveur.Controllers
         private async Task<bool> DocumentExists(int id)
         {
             return await _context.Documents.AnyAsync(e => e.Id == id);
+        }
+
+        private static DocumentResponseDto MapToResponseDto(Document document)
+        {
+            return new DocumentResponseDto
+            {
+                Id = document.Id,
+                PedagogicalStructureId = document.PedagogicalStructureId,
+                DocumentTypeId = document.DocumentTypeId,
+                ExternalReferenceCode = document.ExternalReferenceCode,
+                Version = document.Version,
+                IsActive = document.IsActive,
+                Status = document.Status,
+                TitleFr = document.TitleFr,
+                TitleEn = document.TitleEn,
+                DescriptionFr = document.DescriptionFr,
+                DescriptionEn = document.DescriptionEn,
+                WelcomeMessageFr = document.WelcomeMessageFr,
+                WelcomeMessageEn = document.WelcomeMessageEn,
+                CopyrightFr = document.CopyrightFr,
+                CopyrightEn = document.CopyrightEn,
+                UrlFr = document.UrlFr,
+                UrlEn = document.UrlEn,
+                IsDownloadable = document.IsDownloadable,
+                IsPublic = document.IsPublic,
+                IsEditable = document.IsEditable,
+                EditorSettings = document.EditorSettings,
+                AuthorId = document.AuthorId,
+                IsTemplate = document.IsTemplate,
+                CreatedAt = document.CreatedAt,
+                UpdatedAt = document.UpdatedAt,
+                ItemBanks = document.DocumentItemBanks?.Select(dib => new ItemBankSummaryDto
+                {
+                    Id = dib.ItemBank.Id,
+                    NameFr = dib.ItemBank.NameFr,
+                    NameEn = dib.ItemBank.NameEn
+                }).ToList() ?? new List<ItemBankSummaryDto>()
+            };
         }
     }
 }

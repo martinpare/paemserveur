@@ -65,6 +65,32 @@ namespace serveur.Controllers
         }
 
         /// <summary>
+        /// Rechercher une organisation par son acronyme (endpoint public pour le login)
+        /// </summary>
+        [HttpGet("by-acronym/{acronym}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Organisation>> GetByAcronym(string acronym)
+        {
+            try
+            {
+                var organisation = await _context.Organisations
+                    .FirstOrDefaultAsync(o => o.Acronym == acronym && o.IsActive);
+
+                if (organisation == null)
+                {
+                    return NotFound(new { message = "Organisation non trouvée" });
+                }
+
+                return organisation;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la recherche de l'organisation par acronyme {Acronym}", acronym);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
         /// Obtenir les organisations actives
         /// </summary>
         [HttpGet("active")]

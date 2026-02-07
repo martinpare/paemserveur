@@ -14,121 +14,121 @@ namespace serveur.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class RevisionsController : ControllerBase
+    public class TechnologicalToolsController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly ILogger<RevisionsController> _logger;
+        private readonly ILogger<TechnologicalToolsController> _logger;
 
-        public RevisionsController(AppDbContext context, ILogger<RevisionsController> logger)
+        public TechnologicalToolsController(AppDbContext context, ILogger<TechnologicalToolsController> logger)
         {
             _context = context;
             _logger = logger;
         }
 
         /// <summary>
-        /// Obtenir toutes les révisions
+        /// Obtenir tous les outils technologiques
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Revision>>> GetAll()
+        public async Task<ActionResult<IEnumerable<TechnologicalTool>>> GetAll()
         {
             try
             {
-                return await _context.Revisions
-                    .OrderByDescending(r => r.Date)
+                return await _context.TechnologicalTools
+                    .OrderBy(t => t.DisplayOrder)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des révisions");
+                _logger.LogError(ex, "Erreur lors de la récupération des outils technologiques");
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         /// <summary>
-        /// Obtenir une révision par son ID
+        /// Obtenir un outil technologique par son ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Revision>> GetById(int id)
+        public async Task<ActionResult<TechnologicalTool>> GetById(int id)
         {
             try
             {
-                var revision = await _context.Revisions.FindAsync(id);
-                if (revision == null)
+                var tool = await _context.TechnologicalTools.FindAsync(id);
+                if (tool == null)
                 {
                     return NotFound();
                 }
-                return revision;
+                return tool;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération de la révision {Id}", id);
+                _logger.LogError(ex, "Erreur lors de la récupération de l'outil technologique {Id}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         /// <summary>
-        /// Obtenir les révisions d'un item
+        /// Obtenir les outils technologiques actifs
         /// </summary>
-        [HttpGet("item/{itemId}")]
-        public async Task<ActionResult<IEnumerable<Revision>>> GetByItem(int itemId)
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<TechnologicalTool>>> GetActive()
         {
             try
             {
-                return await _context.Revisions
-                    .Where(r => r.ItemId == itemId)
-                    .OrderByDescending(r => r.Date)
+                return await _context.TechnologicalTools
+                    .Where(t => t.IsActive)
+                    .OrderBy(t => t.DisplayOrder)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des révisions de l'item {ItemId}", itemId);
+                _logger.LogError(ex, "Erreur lors de la récupération des outils technologiques actifs");
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         /// <summary>
-        /// Créer une nouvelle révision
+        /// Créer un nouvel outil technologique
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Revision>> Create(Revision revision)
+        public async Task<ActionResult<TechnologicalTool>> Create(TechnologicalTool tool)
         {
             try
             {
-                revision.CreatedAt = DateTime.UtcNow;
-                revision.UpdatedAt = DateTime.UtcNow;
-
-                _context.Revisions.Add(revision);
+                tool.CreatedAt = DateTime.UtcNow;
+                _context.TechnologicalTools.Add(tool);
                 await _context.SaveChangesAsync();
-                return CreatedAtAction(nameof(GetById), new { id = revision.Id }, revision);
+                return CreatedAtAction(nameof(GetById), new { id = tool.Id }, tool);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la création de la révision");
+                _logger.LogError(ex, "Erreur lors de la création de l'outil technologique");
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         /// <summary>
-        /// Mettre à jour une révision
+        /// Mettre à jour un outil technologique
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Revision revision)
+        public async Task<IActionResult> Update(int id, TechnologicalTool tool)
         {
-            if (id != revision.Id)
+            if (id != tool.Id)
             {
                 return BadRequest("L'ID ne correspond pas");
             }
 
             try
             {
-                revision.UpdatedAt = DateTime.UtcNow;
-                _context.Entry(revision).State = EntityState.Modified;
+                tool.UpdatedAt = DateTime.UtcNow;
+                _context.Entry(tool).State = EntityState.Modified;
+                // Ne pas modifier la date de création
+                _context.Entry(tool).Property(x => x.CreatedAt).IsModified = false;
                 await _context.SaveChangesAsync();
                 return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!await RevisionExists(id))
+                if (!await ToolExists(id))
                 {
                     return NotFound();
                 }
@@ -136,39 +136,39 @@ namespace serveur.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la mise à jour de la révision {Id}", id);
+                _logger.LogError(ex, "Erreur lors de la mise à jour de l'outil technologique {Id}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
         /// <summary>
-        /// Supprimer une révision
+        /// Supprimer un outil technologique
         /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                var revision = await _context.Revisions.FindAsync(id);
-                if (revision == null)
+                var tool = await _context.TechnologicalTools.FindAsync(id);
+                if (tool == null)
                 {
                     return NotFound();
                 }
 
-                _context.Revisions.Remove(revision);
+                _context.TechnologicalTools.Remove(tool);
                 await _context.SaveChangesAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la suppression de la révision {Id}", id);
+                _logger.LogError(ex, "Erreur lors de la suppression de l'outil technologique {Id}", id);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
 
-        private async Task<bool> RevisionExists(int id)
+        private async Task<bool> ToolExists(int id)
         {
-            return await _context.Revisions.AnyAsync(e => e.Id == id);
+            return await _context.TechnologicalTools.AnyAsync(e => e.Id == id);
         }
     }
 }

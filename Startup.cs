@@ -1,9 +1,12 @@
 using System;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +36,21 @@ namespace serveur
 
             // Enregistrement des services
             services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<IDictionarySyncService, DictionarySyncService>();
+            services.AddScoped<IEmailService, EmailService>();
+
+            // Compression des réponses (GZIP) pour le dictionnaire
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+                options.Providers.Add<GzipCompressionProvider>();
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                    new[] { "application/json" });
+            });
+            services.Configure<GzipCompressionProviderOptions>(options =>
+            {
+                options.Level = CompressionLevel.Optimal;
+            });
 
             // JWT Authentication
             var jwtSettings = Configuration.GetSection("Jwt");
@@ -90,7 +108,10 @@ namespace serveur
                             "http://localhost:5173",
                             "http://localhost:5174",
                             "http://localhost:5175",
-                            "http://localhost:9000"  // Dev Vue.js
+                            "http://localhost:9000",        // Dev Vue.js
+                            "http://oiiaq.localhost:9000",  // Sous-domaine oiiaq
+                            "http://meq.localhost:9000",    // Sous-domaine meq
+                            "http://10.0.0.73:9000"         // IP locale réseau
                         )
                            .AllowAnyMethod()
                            .AllowAnyHeader()
@@ -148,6 +169,9 @@ namespace serveur
 
             // app.UseHttpsRedirection();
 
+            // Activer la compression des réponses
+            app.UseResponseCompression();
+
             app.UseRouting();
 
             app.UseCors("AllowFrontend");
@@ -158,8 +182,9 @@ namespace serveur
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                // Mapper le hub SignalR
+                // Mapper les hubs SignalR
                 endpoints.MapHub<NotificationHub>("/hubs/notifications");
+                endpoints.MapHub<ExamHub>("/hubs/exams");
             });
         }
     }

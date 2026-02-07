@@ -55,6 +55,12 @@ namespace serveur.Models.Entities
         [Column("hasAllPermissions")]
         public bool HasAllPermissions { get; set; }
 
+        [Column("showPedagogicalStructureInHeader")]
+        public bool ShowPedagogicalStructureInHeader { get; set; } = false;
+
+        [Column("showLearningCenterInHeader")]
+        public bool ShowLearningCenterInHeader { get; set; } = false;
+
         // Navigation properties
         [ForeignKey("OrganisationId")]
         public virtual Organisation Organisation { get; set; }

@@ -23,53 +23,32 @@ namespace serveur.Models.Entities
         [StringLength(255)]
         public string NameEn { get; set; }
 
-        [Required]
-        [Column("testId")]
-        public int TestId { get; set; }
+        [Column("examId")]
+        public int? ExamId { get; set; }
 
-        [Required]
-        [Column("scheduledAt")]
-        public DateTime ScheduledAt { get; set; }
+        [Column("scheduledFrom")]
+        public DateTime? ScheduledFrom { get; set; }
 
-        [Required]
-        [Column("authTypeId")]
-        public int AuthTypeId { get; set; }
+        [Column("scheduledTo")]
+        public DateTime? ScheduledTo { get; set; }
 
-        [Required]
-        [Column("durationMinutes")]
-        public int DurationMinutes { get; set; }
+        [Column("timeStart")]
+        public TimeSpan? TimeStart { get; set; }
 
-        [Column("allowLanguageChange")]
-        public bool? AllowLanguageChange { get; set; }
+        [Column("timeEnd")]
+        public TimeSpan? TimeEnd { get; set; }
 
-        [Column("allowItemMarking")]
-        public bool? AllowItemMarking { get; set; }
+        [Column("examPeriodId")]
+        public int? ExamPeriodId { get; set; }
 
-        [Column("allowNoteTaking")]
-        public bool? AllowNoteTaking { get; set; }
+        // Navigation properties
+        [ForeignKey("ExamId")]
+        public virtual Exam Exam { get; set; }
 
-        [Column("allowItemScrambling")]
-        public bool? AllowItemScrambling { get; set; }
+        [ForeignKey("ExamPeriodId")]
+        public virtual ExamPeriod ExamPeriod { get; set; }
 
-        [Column("allowHighContrast")]
-        public bool? AllowHighContrast { get; set; }
-
-        [Column("forceFullscreen")]
-        public bool? ForceFullscreen { get; set; }
-
-        [Column("enableKeyboardShortcuts")]
-        public bool? EnableKeyboardShortcuts { get; set; }
-
-        [Column("enableGuidedTour")]
-        public bool? EnableGuidedTour { get; set; }
-
-        [Column("questionSummaryNotice")]
-        public int? QuestionSummaryNotice { get; set; }
-
-        [Column("enableRemoteMode")]
-        public bool? EnableRemoteMode { get; set; }
-
-        [Column("debugMode")]
-        public bool? DebugMode { get; set; }
+        [ForeignKey("PedagogicalStructureId")]
+        public virtual PedagogicalStructure PedagogicalStructure { get; set; }
     }
 }

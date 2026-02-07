@@ -47,7 +47,7 @@ namespace serveur.Controllers
         /// <summary>
         /// Obtenir un contenu de page par son ID
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<PageContent>> GetById(int id)
         {
             try
@@ -62,6 +62,30 @@ namespace serveur.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la récupération du contenu de page {Id}", id);
+                return StatusCode(500, "Erreur interne du serveur");
+            }
+        }
+
+        /// <summary>
+        /// Obtenir un contenu de page par son code (accès public)
+        /// </summary>
+        [HttpGet("by-code/{code}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PageContent>> GetByCode(string code)
+        {
+            try
+            {
+                var pageContent = await _context.PageContents
+                    .FirstOrDefaultAsync(p => p.Code == code);
+                if (pageContent == null)
+                {
+                    return NotFound();
+                }
+                return pageContent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du contenu de page par code {Code}", code);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }

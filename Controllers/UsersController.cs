@@ -224,7 +224,7 @@ namespace serveur.Controllers
                 {
                     FirstName = userDto.FirstName,
                     LastName = userDto.LastName,
-                    Sexe = userDto.Sexe,
+                    GenderId = userDto.GenderId,
                     Username = userDto.Username,
                     Mail = userDto.Mail,
                     Password = HashPassword(userDto.Password),
@@ -232,7 +232,8 @@ namespace serveur.Controllers
                     OrganisationId = userDto.OrganisationId,
                     PedagogicalStructureId = userDto.PedagogicalStructureId,
                     LearningCenterId = userDto.LearningCenterId,
-                    TitleId = userDto.TitleId
+                    TitleId = userDto.TitleId,
+                    Active = userDto.Active
                 };
 
                 _context.Users.Add(user);
@@ -268,12 +269,13 @@ namespace serveur.Controllers
 
                 user.FirstName = userDto.FirstName;
                 user.LastName = userDto.LastName;
-                user.Sexe = userDto.Sexe;
+                user.GenderId = userDto.GenderId;
                 user.Mail = userDto.Mail;
                 user.OrganisationId = userDto.OrganisationId;
                 user.PedagogicalStructureId = userDto.PedagogicalStructureId;
                 user.LearningCenterId = userDto.LearningCenterId;
                 user.TitleId = userDto.TitleId;
+                user.Active = userDto.Active;
 
                 await _context.SaveChangesAsync();
                 return MapToDto(user);
@@ -328,8 +330,8 @@ namespace serveur.Controllers
                 if (updates.TryGetValue("lastName", out var lastNameToken))
                     user.LastName = lastNameToken.Type == JTokenType.Null ? null : lastNameToken.Value<string>();
 
-                if (updates.TryGetValue("sexe", out var sexeToken))
-                    user.Sexe = sexeToken.Type == JTokenType.Null ? null : sexeToken.Value<string>();
+                if (updates.TryGetValue("genderId", out var genderIdToken))
+                    user.GenderId = genderIdToken.Type == JTokenType.Null ? null : genderIdToken.Value<int?>();
 
                 if (updates.TryGetValue("darkMode", out var darkModeToken) && darkModeToken.Type == JTokenType.Boolean)
                     user.DarkMode = darkModeToken.Value<bool>();
@@ -357,6 +359,9 @@ namespace serveur.Controllers
 
                 if (updates.TryGetValue("activeRoleId", out var activeRoleToken))
                     user.ActiveRoleId = activeRoleToken.Type == JTokenType.Null ? null : activeRoleToken.Value<int>();
+
+                if (updates.TryGetValue("active", out var activeToken) && activeToken.Type == JTokenType.Boolean)
+                    user.Active = activeToken.Value<bool>();
 
                 await _context.SaveChangesAsync();
                 return MapToDto(user);
@@ -486,7 +491,7 @@ namespace serveur.Controllers
                 Id = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Sexe = user.Sexe,
+                GenderId = user.GenderId,
                 Username = user.Username,
                 Mail = user.Mail,
                 DarkMode = user.DarkMode,
@@ -497,7 +502,8 @@ namespace serveur.Controllers
                 PedagogicalStructureId = user.PedagogicalStructureId,
                 LearningCenterId = user.LearningCenterId,
                 TitleId = user.TitleId,
-                ActiveRoleId = user.ActiveRoleId
+                ActiveRoleId = user.ActiveRoleId,
+                Active = user.Active
             };
         }
 

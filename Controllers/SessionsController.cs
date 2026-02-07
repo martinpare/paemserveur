@@ -34,7 +34,7 @@ namespace serveur.Controllers
             try
             {
                 return await _context.Sessions
-                    .OrderByDescending(s => s.ScheduledAt)
+                    .OrderByDescending(s => s.ScheduledFrom)
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -76,7 +76,7 @@ namespace serveur.Controllers
             {
                 return await _context.Sessions
                     .Where(s => s.PedagogicalStructureId == structureId)
-                    .OrderByDescending(s => s.ScheduledAt)
+                    .OrderByDescending(s => s.ScheduledFrom)
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -87,21 +87,21 @@ namespace serveur.Controllers
         }
 
         /// <summary>
-        /// Obtenir les sessions par test
+        /// Obtenir les sessions par examen
         /// </summary>
-        [HttpGet("test/{testId}")]
-        public async Task<ActionResult<IEnumerable<Session>>> GetByTest(int testId)
+        [HttpGet("exam/{examId}")]
+        public async Task<ActionResult<IEnumerable<Session>>> GetByExam(int examId)
         {
             try
             {
                 return await _context.Sessions
-                    .Where(s => s.TestId == testId)
-                    .OrderByDescending(s => s.ScheduledAt)
+                    .Where(s => s.ExamId == examId)
+                    .OrderByDescending(s => s.ScheduledFrom)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erreur lors de la récupération des sessions du test {TestId}", testId);
+                _logger.LogError(ex, "Erreur lors de la récupération des sessions de l'examen {ExamId}", examId);
                 return StatusCode(500, "Erreur interne du serveur");
             }
         }
